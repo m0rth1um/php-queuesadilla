@@ -2,11 +2,28 @@
 
 namespace josegonzalez\Queuesadilla\Worker;
 
+declare(ticks=1);
+
 use Exception;
 use josegonzalez\Queuesadilla\Worker\Base;
+use josegonzalez\Queuesadilla\Engine\EngineInterface;
+use Psr\Log\LoggerInterface;
 
 class SequentialWorker extends Base
 {
+    protected $running;
+
+    public function __construct(EngineInterface $engine, LoggerInterface $logger = null, $params = [])
+    {
+        parent::__construct($engine, $logger, $params);
+        pcntl_signal(SIGTERM, [&$this, 'signalHandler']);
+        pcntl_signal(SIGHUP, [&$this, 'signalHandler']);
+        pcntl_signal(SIGUSR1, [&$this, 'signalHandler']);
+        pcntl_signal(SIGINT, [&$this, 'signalHandler']);
+
+        $this->running = true;
+    }
+
     /**
      * {@inheritDoc}
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -21,7 +38,7 @@ class SequentialWorker extends Base
 
         $jobClass = $this->engine->getJobClass();
         $time = microtime(true);
-        while (true) {
+        while ($this->running) {
             if (is_int($this->maxRuntime) && $this->runtime >= $this->maxRuntime) {
                 $this->logger()->debug('Max runtime reached, exiting');
                 $this->dispatchEvent('Worker.maxRuntime');
@@ -110,5 +127,30 @@ class SequentialWorker extends Base
 
     protected function disconnect()
     {
+    }
+
+    public function signalHandler($signo)
+    {
+        switch ($signo) {
+            case SIGTERM:
+                $this->logger()->debug('SIG: handle shutdown tasks');
+                $this->running = false;
+                break;
+            case SIGHUP:
+                $this->logger()->debug('SIG: handle restart tasks');
+                break;
+            case SIGUSR1:
+                $this->logger()->debug('SIG: Caught SIGUSR1');
+                break;
+            case SIGINT:
+                $this->logger()->debug('SIG: Caught CTRL+C');
+                $this->running = false;
+                break;
+            default:
+                $this->logger()->debug('SIG: handle all other signals');
+                break;
+        }
+
+        return;
     }
 }
