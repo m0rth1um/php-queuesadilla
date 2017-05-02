@@ -18,7 +18,7 @@ RUN apt-get -qq install -qq -y git
 RUN \
     locale-gen en_US.UTF-8 && \
     apt-get -qq install -qq -y language-pack-en-base
-RUN LC_ALL=en_US.UTF-8 add-apt-repository ppa:ondrej/php5-5.6 && \
+RUN LC_ALL=en_US.UTF-8 add-apt-repository ppa:ondrej/php && \
     apt-get -qq update
 RUN apt-get -qq install -qq -y php5-cli php5-curl php5-mysql php5-pgsql php-pear php5-xdebug php5-redis
 
