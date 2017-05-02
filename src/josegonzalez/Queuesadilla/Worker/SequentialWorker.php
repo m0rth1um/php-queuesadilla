@@ -16,10 +16,10 @@ class SequentialWorker extends Base
     public function __construct(EngineInterface $engine, LoggerInterface $logger = null, $params = [])
     {
         parent::__construct($engine, $logger, $params);
+        pcntl_signal(SIGQUIT, [&$this, 'signalHandler']);
         pcntl_signal(SIGTERM, [&$this, 'signalHandler']);
-        pcntl_signal(SIGHUP, [&$this, 'signalHandler']);
-        pcntl_signal(SIGUSR1, [&$this, 'signalHandler']);
         pcntl_signal(SIGINT, [&$this, 'signalHandler']);
+        pcntl_signal(SIGUSR1, [&$this, 'signalHandler']);
 
         $this->running = true;
     }
@@ -129,28 +129,42 @@ class SequentialWorker extends Base
     {
     }
 
-    public function signalHandler($signo)
+    public function signalHandler($signo = null)
     {
+        $signals = array(
+            SIGQUIT => "SIGQUIT",
+            SIGTERM => "SIGTERM",
+            SIGINT  => "SIGINT",
+            SIGUSR1 => "SIGUSR1",
+        );
+
+        if ($signo !== null) {
+            $signal = $signals[$signo];
+            $this->logger->info(sprintf("Received %s... Shutting down", $signal));
+        }
+
         switch ($signo) {
-            case SIGTERM:
-                $this->logger()->debug('SIG: handle shutdown tasks');
+            case SIGQUIT:
+                $this->logger()->debug('SIG: Caught SIGQUIT');
                 $this->running = false;
                 break;
-            case SIGHUP:
-                $this->logger()->debug('SIG: handle restart tasks');
-                break;
-            case SIGUSR1:
-                $this->logger()->debug('SIG: Caught SIGUSR1');
+            case SIGTERM:
+                $this->logger()->debug('SIG: Caught SIGTERM');
+                $this->running = false;
                 break;
             case SIGINT:
                 $this->logger()->debug('SIG: Caught CTRL+C');
                 $this->running = false;
                 break;
+            case SIGUSR1:
+                $this->logger()->debug('SIG: Caught SIGUSR1');
+                $this->running = false;
+                break;
             default:
-                $this->logger()->debug('SIG: handle all other signals');
+                $this->logger()->debug('SIG:received other signal');
                 break;
         }
 
-        return;
+        return true;
     }
 }

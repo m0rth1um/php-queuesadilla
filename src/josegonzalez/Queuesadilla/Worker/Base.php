@@ -54,22 +54,8 @@ abstract class Base
         return $this->StatsListener->stats;
     }
 
-    public function shutdownHandler($signo = null)
+    public function shutdownHandler()
     {
-        $this->logger->info("Shutting down");
-
-        $signals = array(
-            SIGQUIT => "SIGQUIT",
-            SIGTERM => "SIGTERM",
-            SIGINT  => "SIGINT",
-            SIGUSR1 => "SIGUSR1",
-        );
-
-        if ($signo !== null) {
-            $signal = $signals[$signo];
-            $this->logger->info(sprintf("Received received %s... Shutting down", $signal));
-        }
-
         $this->disconnect();
 
         $this->logger->info(sprintf(
