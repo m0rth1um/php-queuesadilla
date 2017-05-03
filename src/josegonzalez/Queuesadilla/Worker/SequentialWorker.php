@@ -169,7 +169,7 @@ class SequentialWorker extends Base
         return true;
     }
 
-    public function shutdownHandler()
+    public function shutdownHandler($signo = null)
     {
         $this->disconnect();
 
