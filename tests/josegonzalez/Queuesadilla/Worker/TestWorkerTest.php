@@ -67,6 +67,10 @@ class TestWorkerTest extends TestCase
     public function testShutdownHandler()
     {
         $this->assertEquals(true, $this->Worker->shutdownHandler());
+        $this->assertEquals(true, $this->Worker->shutdownHandler(SIGQUIT));
+        $this->assertEquals(true, $this->Worker->shutdownHandler(SIGTERM));
+        $this->assertEquals(true, $this->Worker->shutdownHandler(SIGINT));
+        $this->assertEquals(true, $this->Worker->shutdownHandler(SIGUSR1));
     }
 
     /**
