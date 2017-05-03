@@ -33,6 +33,7 @@ class SequentialWorker extends Base
         if (!$this->connect()) {
             $this->logger()->alert(sprintf('Worker unable to connect, exiting'));
             $this->dispatchEvent('Worker.job.connectionFailed');
+
             return false;
         }
 
@@ -99,6 +100,7 @@ class SequentialWorker extends Base
     {
         $maxIterations = $this->maxIterations ? sprintf(', max iterations %s', $this->maxIterations) : '';
         $this->logger()->info(sprintf('Starting worker%s', $maxIterations));
+
         return (bool)$this->engine->connection();
     }
 
@@ -131,12 +133,12 @@ class SequentialWorker extends Base
 
     public function signalHandler($signo = null)
     {
-        $signals = array(
+        $signals = [
             SIGQUIT => "SIGQUIT",
             SIGTERM => "SIGTERM",
-            SIGINT  => "SIGINT",
+            SIGINT => "SIGINT",
             SIGUSR1 => "SIGUSR1",
-        );
+        ];
 
         if ($signo !== null) {
             $signal = $signals[$signo];
@@ -164,7 +166,18 @@ class SequentialWorker extends Base
                 $this->logger()->debug('SIG:received other signal');
                 break;
         }
+        return true;
+    }
 
+    public function shutdownHandler()
+    {
+        $this->disconnect();
+
+        $this->logger->info(sprintf(
+            "Worker shutting down after running %d iterations in %ds",
+            $this->iterations,
+            $this->runtime
+        ));
         return true;
     }
 }
